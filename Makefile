@@ -1,8 +1,11 @@
 build:
-	@go build -o bin/gobank
+	@go build -o bin/goclique
 
 run: build
-	@./bin/gobank
+	@./bin/goclique
+
+clean:
+	@-rm bin/*
 
 test:
 	@go test -v ./...
