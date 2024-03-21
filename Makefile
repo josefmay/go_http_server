@@ -1,8 +1,8 @@
 build:
-	@go build -o bin/goclique
+	@go build -o bin/goserver cmd/api/main.go
 
 run: build
-	@./bin/goclique
+	@./bin/goserver
 
 clean:
 	@-rm bin/*
