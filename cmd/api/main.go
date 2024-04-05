@@ -11,6 +11,15 @@ import (
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
 
+// func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		err := f(w, r)
+// 		if err != nil {
+// 			ToJSON(w, http.StatusBadRequest, err.Error())
+// 		}
+// 	}
+// }
+
 const version = "1.0.0"
 
 type config struct {
@@ -22,6 +31,7 @@ type application struct {
     config config
     logger *slog.Logger
 }
+
 
 func newAPIServer(cfg config, mux http.ServeMux) *http.Server{
 	return &http.Server{
@@ -46,6 +56,27 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "login route")
 }
 
+func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) {
+    logger.Info("Login Route Hit...")
+    fmt.Fprintln(w, "login route")
+}
+
+func (app *application) accountHandler(w http.ResponseWriter, r *http.Request) {
+    logger.Info("Login Route Hit...")
+    fmt.Fprintln(w, "login route")
+}
+
+func (app *application) reportHandler(w http.ResponseWriter, r *http.Request) {
+    logger.Info("Login Route Hit...")
+    fmt.Fprintln(w, "login route")
+}
+
+func WriteJSON(w http.ResponseWriter, status int, v any) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	return json.NewEncoder(w).Encode(v)
+}
 
 func main() {
     var cfg config
@@ -63,11 +94,13 @@ func main() {
 
     mux := http.NewServeMux()
     mux.HandleFunc("/v1/healthcheck", app.healthcheckHandler)
-    // mux.HandleFunc("/v1/register", app.loginHandler)
+    // mux.HandleFunc("/v1/register", app.registernHandler)
     // mux.HandleFunc("/v1/login", app.loginHandler)
     // mux.HandleFunc("/v1/account", app.healthcheckHandler)
+    
+    
     // mux.HandleFunc("/v1/watchlist", app.healthcheckHandler)
-    // mux.HandleFunc("/v1/report", app.healthcheckHandler)
+    // mux.HandleFunc("/v1/report", app.healthcheckHandler)a
 
 
 	
@@ -85,12 +118,21 @@ func main() {
 /*
 /account authentication JWT
 /watchlist watchlist database
-/python backtester optimization engine
+/backtest python backtester optimization engine
 /report run reporting
 
 sqlite3
 
 react frontend?
+
+when you register no token
+when you login given token
+need token for
+
+/report grabs report
+
+/backtest
+where to hold results
 */
 
 
@@ -138,15 +180,4 @@ react frontend?
 
 // func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
 // 	return nil
-// }
-
-
-
-// func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		err := f(w, r)
-// 		if err != nil {
-// 			ToJSON(w, http.StatusBadRequest, err.Error())
-// 		}
-// 	}
 // }
