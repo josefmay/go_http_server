@@ -9,6 +9,8 @@ import (
     "time"
 )
 
+type apiFunc func(http.ResponseWriter, *http.Request) error
+
 const version = "1.0.0"
 
 type config struct {
@@ -21,10 +23,27 @@ type application struct {
     logger *slog.Logger
 }
 
+func newAPIServer(cfg config, mux http.ServeMux) *http.Server{
+	return &http.Server{
+        Addr:         fmt.Sprintf(":%d", cfg.port),
+        Handler:      mux,
+        IdleTimeout:  time.Minute,
+        ReadTimeout:  5 * time.Second,
+        WriteTimeout: 10 * time.Second,
+        ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
+    }
+}
+
+
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "status: available")
     fmt.Fprintf(w, "environment: %s\n", app.config.env)
     fmt.Fprintf(w, "version: %s\n", version)
+}
+
+func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
+    logger.Info("Login Route Hit...")
+    fmt.Fprintln(w, "login route")
 }
 
 
@@ -44,15 +63,15 @@ func main() {
 
     mux := http.NewServeMux()
     mux.HandleFunc("/v1/healthcheck", app.healthcheckHandler)
+    // mux.HandleFunc("/v1/register", app.loginHandler)
+    // mux.HandleFunc("/v1/login", app.loginHandler)
+    // mux.HandleFunc("/v1/account", app.healthcheckHandler)
+    // mux.HandleFunc("/v1/watchlist", app.healthcheckHandler)
+    // mux.HandleFunc("/v1/report", app.healthcheckHandler)
+
+
 	
-    srv := &http.Server{
-        Addr:         fmt.Sprintf(":%d", cfg.port),
-        Handler:      mux,
-        IdleTimeout:  time.Minute,
-        ReadTimeout:  5 * time.Second,
-        WriteTimeout: 10 * time.Second,
-        ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
-    }
+    srv := newAPIServer(cfg, mux)
 
     // Start the HTTP server.
     logger.Info("starting server...", "addr", srv.Addr, "env", cfg.env)
@@ -74,16 +93,6 @@ sqlite3
 react frontend?
 */
 
-// type APIServer struct {
-// 	listenAddr string
-// }
-
-
-// func newAPIServer(listenAddr string) * APIServer{
-// 	return &APIServer{
-// 		listenAddr: listenAddr,
-// 	}
-// }
 
 // func (s *APIServer) Run() {
 // 	http.HandleFunc("/v1/healthcheck", func (w http.ResponseWriter, r *http.Request) {
@@ -132,8 +141,6 @@ react frontend?
 // }
 
 
-
-// type apiFunc func(http.ResponseWriter, *http.Request) error
 
 // func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 // 	return func(w http.ResponseWriter, r *http.Request) {
