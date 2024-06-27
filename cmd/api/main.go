@@ -10,15 +10,20 @@ import (
 )
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
+/*
+makeHTTPHandleFunc adds error handling to route handlers
+Golang http handlers do not return an error,
+therefore this workaround is need for error handling
 
-// func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		err := f(w, r)
-// 		if err != nil {
-// 			ToJSON(w, http.StatusBadRequest, err.Error())
-// 		}
-// 	}
-// }
+*/
+func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := f(w, r)
+		if err != nil {
+			ToJSON(w, http.StatusBadRequest, err.Error())
+		}
+	}
+}
 
 const version = "1.0.0"
 
@@ -45,28 +50,28 @@ func newAPIServer(cfg config, mux http.ServeMux) *http.Server{
 }
 
 
-func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) error{
     fmt.Fprintln(w, "status: available")
     fmt.Fprintf(w, "environment: %s\n", app.config.env)
     fmt.Fprintf(w, "version: %s\n", version)
 }
 
-func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) error{
     logger.Info("Login Route Hit...")
     fmt.Fprintln(w, "login route")
 }
 
-func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) error{
     logger.Info("Login Route Hit...")
     fmt.Fprintln(w, "login route")
 }
 
-func (app *application) accountHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) accountHandler(w http.ResponseWriter, r *http.Request) error{
     logger.Info("Login Route Hit...")
     fmt.Fprintln(w, "login route")
 }
 
-func (app *application) reportHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) reportHandler(w http.ResponseWriter, r *http.Request) error{
     logger.Info("Login Route Hit...")
     fmt.Fprintln(w, "login route")
 }
@@ -93,7 +98,7 @@ func main() {
     }
 
     mux := http.NewServeMux()
-    mux.HandleFunc("/v1/healthcheck", app.healthcheckHandler)
+    mux.HandleFunc("/v1/healthcheck", makeHTTPHandleFunc(app.healthcheckHandler))
     // mux.HandleFunc("/v1/register", app.registernHandler)
     // mux.HandleFunc("/v1/login", app.loginHandler)
     // mux.HandleFunc("/v1/account", app.healthcheckHandler)
