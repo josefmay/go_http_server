@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"github.com/josefmay/learn_go/http_server/cmd/api"
+	"github.com/josefmay/go_http_server/cmd/api"
 )
 
 
