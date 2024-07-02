@@ -1,8 +1,14 @@
 # go_http_server
 Learning GO web dev
 
-## To Run
-make run
+## Desc
+Building a http webserver with native go ecosystem
 
-## To Clean
+### To Clean
 make clean
+
+### To Build
+make build
+
+### To Run
+make run
