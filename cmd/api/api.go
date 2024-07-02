@@ -7,6 +7,7 @@ import (
     "net/http"
     "os"
     "time"
+    "encoding/json"
 )
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
@@ -14,7 +15,6 @@ type apiFunc func(http.ResponseWriter, *http.Request) error
 makeHTTPHandleFunc adds error handling to route handlers
 Golang http handlers do not return an error,
 therefore this workaround is need for error handling
-
 */
 func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -38,14 +38,13 @@ type application struct {
 }
 
 
-func newAPIServer(cfg config, mux http.ServeMux) *http.Server{
+func newAPIServer(cfg config, mux *http.ServeMux) *http.Server{
 	return &http.Server{
-        Addr:         fmt.Sprintf(":%d", cfg.port),
+        Addr:         fmt.Sprintf(":%s", cfg.port),
         Handler:      mux,
         IdleTimeout:  time.Minute,
         ReadTimeout:  5 * time.Second,
         WriteTimeout: 10 * time.Second,
-        ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
     }
 }
 
@@ -53,40 +52,44 @@ func newAPIServer(cfg config, mux http.ServeMux) *http.Server{
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) error{
     fmt.Fprintln(w, "status: available")
     fmt.Fprintf(w, "environment: %s\n", app.config.env)
-    fmt.Fprintf(w, "version: %s\n", version)
+    _, err := fmt.Fprintf(w, "version: %s\n", version)
+    if err != nil{
+        return err
+    }
+    return nil
 }
 
-func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) error{
-    logger.Info("Login Route Hit...")
-    fmt.Fprintln(w, "login route")
-}
+// func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) error{
+//     logger.Info("Login Route Hit...")
+//     fmt.Fprintln(w, "login route")
+// }
 
-func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) error{
-    logger.Info("Login Route Hit...")
-    fmt.Fprintln(w, "login route")
-}
+// func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) error{
+//     logger.Info("Login Route Hit...")
+//     fmt.Fprintln(w, "login route")
+// }
 
-func (app *application) accountHandler(w http.ResponseWriter, r *http.Request) error{
-    logger.Info("Login Route Hit...")
-    fmt.Fprintln(w, "login route")
-}
+// func (app *application) accountHandler(w http.ResponseWriter, r *http.Request) error{
+//     logger.Info("Login Route Hit...")
+//     fmt.Fprintln(w, "login route")
+// }
 
-func (app *application) reportHandler(w http.ResponseWriter, r *http.Request) error{
-    logger.Info("Login Route Hit...")
-    fmt.Fprintln(w, "login route")
-}
+// func (app *application) reportHandler(w http.ResponseWriter, r *http.Request) error{
+//     logger.Info("Login Route Hit...")
+//     fmt.Fprintln(w, "login route")
+// }
 
-func WriteJSON(w http.ResponseWriter, status int, v any) error {
+func ToJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	return json.NewEncoder(w).Encode(v)
+	json.NewEncoder(w).Encode(v)
 }
 
-func main() {
+func initServer() *http.Server {
     var cfg config
 
-    flag.IntVar(&cfg.port, "port", 3000, "API server port")
+    flag.IntVar(&cfg.port, "port", 8080, "API server port")
     flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
     flag.Parse()
 
@@ -112,11 +115,9 @@ func main() {
     srv := newAPIServer(cfg, mux)
 
     // Start the HTTP server.
-    logger.Info("starting server...", "addr", srv.Addr, "env", cfg.env)
+    // logger.Info("starting server...", "addr", srv.Addr, "env", cfg.env)
     
-    err := srv.ListenAndServe()
-    logger.Error(err.Error())
-    os.Exit(1)
+    return srv
 }
 
 

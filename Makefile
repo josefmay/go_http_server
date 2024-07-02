@@ -1,8 +1,8 @@
 build:
-	@go build -o bin/goserver
+	@go build -o bin/go-server
 
 run: build
-	@./bin/goserver
+	@./bin/go-server
 
 clean:
 	@-rm bin/*

@@ -2,7 +2,7 @@
 Learning GO web dev
 
 ## Desc
-Building a http webserver with native go ecosystem
+Building a http webserver with native GO ecosystem
 
 ### To Clean
 make clean
