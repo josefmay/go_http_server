@@ -9,7 +9,7 @@ import (
 
 func main() {
 	fmt.Printf("Hi")
-	srv := api.initServer()
+	srv := api.InitServer()
 	err := srv.ListenAndServe()
 
 	if err != nil{

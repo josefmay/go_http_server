@@ -40,7 +40,7 @@ type application struct {
 
 func newAPIServer(cfg config, mux *http.ServeMux) *http.Server{
 	return &http.Server{
-        Addr:         fmt.Sprintf(":%s", cfg.port),
+        Addr:         fmt.Sprintf(":%d", cfg.port),
         Handler:      mux,
         IdleTimeout:  time.Minute,
         ReadTimeout:  5 * time.Second,
@@ -86,7 +86,7 @@ func ToJSON(w http.ResponseWriter, status int, v any) {
 	json.NewEncoder(w).Encode(v)
 }
 
-func initServer() *http.Server {
+func InitServer() *http.Server {
     var cfg config
 
     flag.IntVar(&cfg.port, "port", 8080, "API server port")
