@@ -8,6 +8,13 @@ import (
     "os"
     "time"
     "encoding/json"
+    "context"
+    "sync"
+
+    "github.com/joho/godotenv"
+
+    polygon "github.com/polygon-io/client-go/rest"
+	"github.com/polygon-io/client-go/rest/models"
 )
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
@@ -21,6 +28,7 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 		err := f(w, r)
 		if err != nil {
 			ToJSON(w, http.StatusBadRequest, err.Error())
+            return
 		}
 	}
 }
@@ -37,7 +45,6 @@ type application struct {
     logger *slog.Logger
 }
 
-
 func newAPIServer(cfg config, mux *http.ServeMux) *http.Server{
 	return &http.Server{
         Addr:         fmt.Sprintf(":%d", cfg.port),
@@ -47,7 +54,6 @@ func newAPIServer(cfg config, mux *http.ServeMux) *http.Server{
         WriteTimeout: 10 * time.Second,
     }
 }
-
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) error{
     fmt.Fprintln(w, "status: available")
@@ -59,25 +65,62 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
     return nil
 }
 
-// func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) error{
-//     logger.Info("Login Route Hit...")
-//     fmt.Fprintln(w, "login route")
-// }
+func polygonAPI(ctx context.Context, client *polygon.Client, ticker string, wg *sync.WaitGroup) error{
+    defer wg.Done()
+    slog.Info("Retrieving stock data...", "Ticker", ticker)
+    params := &models.ListAggsParams{
+		Ticker:     ticker,
+		Multiplier: 1,
+		Timespan:   "day",
+		From:       models.Millis(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+		To:         models.Millis(time.Date(2024, 3, 9, 0, 0, 0, 0, time.UTC)),
+	}
 
-// func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) error{
-//     logger.Info("Login Route Hit...")
-//     fmt.Fprintln(w, "login route")
-// }
+    iter := client.ListAggs(ctx, params)
 
-// func (app *application) accountHandler(w http.ResponseWriter, r *http.Request) error{
-//     logger.Info("Login Route Hit...")
-//     fmt.Fprintln(w, "login route")
-// }
+	
+	for iter.Next() {
+		slog.Info("Iteration Item", "msg", iter.Item())
+	}
+	if iter.Err() != nil {
+		slog.Error("Error", "err", iter.Err())
+	}
 
-// func (app *application) reportHandler(w http.ResponseWriter, r *http.Request) error{
-//     logger.Info("Login Route Hit...")
-//     fmt.Fprintln(w, "login route")
-// }
+    return nil
+}
+
+func (app *application) stockInfoHandler(w http.ResponseWriter, r *http.Request) error{
+    slog.Info("Stock Info Handler initiated...")
+
+    slog.Info("Creating Polygon client")
+    api_key:=os.Getenv("POLY_API_KEY")
+    cli := polygon.New(api_key)
+
+    var wg sync.WaitGroup
+    ctx, cancel :=context.WithCancel(context.Background())
+    defer cancel()
+
+    tickers := []string{
+        "AAPL",
+        "VZ",
+        "XEL",
+        "CRWD",
+        "VICI",
+        "INTC",
+    }
+
+    // concurrency parrellism
+    for _, ticker := range tickers {
+        wg.Add(1)
+        go polygonAPI(ctx, cli, ticker, &wg)
+    }
+
+    wg.Wait()
+    slog.Info("All Goroutines have finished....")
+    // End concurrency
+    return nil
+    
+}
 
 func ToJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Add("Content-Type", "application/json")
@@ -88,7 +131,7 @@ func ToJSON(w http.ResponseWriter, status int, v any) {
 
 func InitServer() *http.Server {
     var cfg config
-
+    godotenv.Load()
     flag.IntVar(&cfg.port, "port", 8080, "API server port")
     flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
     flag.Parse()
@@ -102,20 +145,10 @@ func InitServer() *http.Server {
 
     mux := http.NewServeMux()
     mux.HandleFunc("/v1/healthcheck", makeHTTPHandleFunc(app.healthcheckHandler))
-    // mux.HandleFunc("/v1/register", app.registernHandler)
-    // mux.HandleFunc("/v1/login", app.loginHandler)
-    // mux.HandleFunc("/v1/account", app.healthcheckHandler)
-    
-    
-    // mux.HandleFunc("/v1/watchlist", app.healthcheckHandler)
-    // mux.HandleFunc("/v1/report", app.healthcheckHandler)a
+    mux.HandleFunc("/v1/getBatchStockInfo", makeHTTPHandleFunc(app.stockInfoHandler))
+    mux.HandleFunc("/v1/getStockInfo", makeHTTPHandleFunc(app.stockInfoHandler))
 
-
-	
     srv := newAPIServer(cfg, mux)
-
-    // Start the HTTP server.
-    // logger.Info("starting server...", "addr", srv.Addr, "env", cfg.env)
     
     return srv
 }
@@ -140,50 +173,3 @@ need token for
 /backtest
 where to hold results
 */
-
-
-// func (s *APIServer) Run() {
-// 	http.HandleFunc("/v1/healthcheck", func (w http.ResponseWriter, r *http.Request) {
-// 		log.Println(r.URL.Path)
-//         fmt.Fprintf(w, "Welcome to my website!")
-//     })
-
-// 	http.HandleFunc("/account", makeHTTPHandleFunc(s.handleAccount))
-
-// 	http.ListenAndServe(s.listenAddr, nil)
-// }
-
-// func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
-// 	log.Println(r.URL.Path)
-
-// 	//Switch statement later
-
-// 	if r.Method == "GET" {
-// 		return s.handleGetAccount(w, r)
-// 	}
-
-// 	if r.Method == "POST" {
-// 		return s.handleCreateAccount(w, r)
-
-// 	}
-
-// 	if r.Method == "DELETE" {
-// 		return s.handleDeleteAccount(w, r)
-
-// 	}
-
-// 	return fmt.Errorf("Not a valid method")
-// }
-
-// func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
-// 	ToJSON(w, 200, "Handled like a boss")
-// 	return nil
-// }
-
-// func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
-// 	return nil
-// }
-
-// func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
-// 	return nil
-// }

@@ -1,19 +1,19 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"github.com/josefmay/go_http_server/cmd/api"
+	"log"
+
+	"github.com/josefmay/go_http_server/cmd"
 )
 
 
 func main() {
-	fmt.Printf("Hi")
+	log.Print("Initializing server...")
 	srv := api.InitServer()
-	err := srv.ListenAndServe()
 
+	log.Print("Server starting....")
+	err := srv.ListenAndServe()
 	if err != nil{
-		fmt.Printf("Error")
-		os.Exit(1)
+		log.Fatal("Server failed to launch.")
 	}
 }
